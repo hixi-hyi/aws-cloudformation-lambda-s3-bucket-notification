@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Date:
+    Type: String
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Runtime: python3.6
+      Code:
+        ZipFile: !Sub |
+          def handler(event, context):
+            print(event)
+  S3Bucket:
+    Type: AWS::S3::Bucket
+  S3BucketNofiticationConfiguration:
+    Type: Custom::Lambda
+    Properties:
+      ServiceToken: !ImportValue cfn-lambda-s3-bucket-notification-configuration:LambdaArn
+      Bucket: !Ref S3Bucket
+      NotificationConfiguration:
+        LambdaFunctionConfigurations:
+          - Events:
+              - s3:ObjectCreated:*
+            LambdaFunctionArn: !GetAtt LambdaFunction.Arn
+      DeployAlways: !Ref Date
