@@ -56,5 +56,5 @@ class TestScenario(TestCase):
         if True:
             c = S3BucketNotificationConfiguration(delete_event, context)
             c.run()
-            self.assertEqual(get_bucket_notification_configuration(bucket_name).get('LambdaFunctionConfigurations'), None)
+            self.assertNotIn('LambdaFunctionConfigurations', get_bucket_notification_configuration(bucket_name))
 
