@@ -36,10 +36,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - ssm:DeleteParameter
-                  - ssm:PutParameter
-                  - ssm:GetParameter
-                Resource: "*"
+                  - s3:GetBucketNotification
+                  - s3:PutBucketNotification
+                Resource: "awn:aws:s3:::*"
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -69,4 +68,7 @@ Outputs:
     Value: !GetAtt Lambda.Arn
     Export:
       Name: !Sub ${AWS::StackName}:LambdaArn
-
+  LambdaRoleArn:
+    Value: !GetAtt Role.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}:LambdaRoleArn

@@ -3,19 +3,60 @@ Parameters:
   Date:
     Type: String
 Resources:
+  Cw:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${LambdaFunction}
+      RetentionInDays: 7
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt S3Bucket.Arn
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
       Runtime: python3.6
+      Role: !GetAtt LambdaRole.Arn
       Code:
         ZipFile: !Sub |
           def handler(event, context):
             print(event)
   S3Bucket:
     Type: AWS::S3::Bucket
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:PutBucketNotification"
+            Effect: "Allow"
+            Resource: !GetAtt S3Bucket.Arn
+            Principal:
+              AWS: !ImportValue cfn-lambda-s3-bucket-notification-configuration:LambdaRoleArn
   S3BucketNofiticationConfiguration:
     Type: Custom::Lambda
+    DependsOn: S3BucketPolicy
     Properties:
       ServiceToken: !ImportValue cfn-lambda-s3-bucket-notification-configuration:LambdaArn
       Bucket: !Ref S3Bucket
@@ -25,3 +66,6 @@ Resources:
               - s3:ObjectCreated:*
             LambdaFunctionArn: !GetAtt LambdaFunction.Arn
       DeployAlways: !Ref Date
+      Policies:
+        Deletion:
+          - IgnoreError
